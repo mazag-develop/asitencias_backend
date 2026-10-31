@@ -13,20 +13,7 @@ export class AsistenciasService {
   private readonly api = inject(ApiService);
 
   scan(codigo: string): Observable<AsistenciaScanResponse> {
-    return this.api.post<AsistenciaScanResponse>('/asistencias/scan', { codigo }).pipe(
-      catchError(() =>
-        of({
-          success: false,
-          message: 'No se pudo contactar con el backend para registrar la asistencia.',
-          data: {
-            persona: 'Desconocido',
-            tipo: 'ESTUDIANTE' as const,
-            hora: new Date().toLocaleTimeString('es-ES', { hour12: false }),
-            estado: 'FALTA' as const
-          }
-        })
-      )
-    );
+    return this.api.post<AsistenciaScanResponse>('/asistencias/scan', { codigo });
   }
 
   historial(filters?: QueryParams): Observable<RespuestaPaginada<Asistencia>> {

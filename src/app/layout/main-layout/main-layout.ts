@@ -22,7 +22,14 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="nav-section">
             <p class="section-title">{{ group.title }}</p>
             @for (item of group.items; track item.id) {
-              <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="closeSidebar()">
+              <a
+                class="nav-item"
+                [routerLink]="item.route"
+                [queryParams]="item.queryParams"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                (click)="closeSidebar()"
+              >
                 <span class="nav-icon">{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
               </a>
@@ -309,30 +316,66 @@ export class MainLayout {
   readonly menuGroups = [
     {
       title: 'GENERAL',
-      items: [{ id: 'dashboard', label: 'Dashboard', route: '/dashboard', icon: '▣' }]
+      items: [{ id: 'dashboard', label: 'Dashboard', route: '/dashboard', queryParams: {}, icon: '▣' }]
     },
     {
       title: 'GESTIÓN',
       items: [
-        { id: 'personas', label: 'Personas', route: '/personas', icon: '👥' },
-        { id: 'estudiantes', label: 'Estudiantes', route: '/personas', icon: '🧑‍🎓' },
-        { id: 'profesores', label: 'Profesores', route: '/personas', icon: '👨‍🏫' }
+        { id: 'personas', label: 'Personas', route: '/personas', queryParams: {}, icon: '👥' },
+        {
+          id: 'estudiantes',
+          label: 'Estudiantes',
+          route: '/personas',
+          queryParams: { tipo: 'ESTUDIANTE' },
+          icon: '🧑‍🎓'
+        },
+        {
+          id: 'profesores',
+          label: 'Profesores',
+          route: '/personas',
+          queryParams: { tipo: 'PROFESOR' },
+          icon: '👨‍🏫'
+        }
       ]
     },
     {
       title: 'ASISTENCIA',
       items: [
-        { id: 'registrar-asistencia', label: 'Registrar asistencia', route: '/asistencias', icon: '✓' },
-        { id: 'historial', label: 'Historial', route: '/historial', icon: '🕒' },
-        { id: 'asistencia-diaria', label: 'Resumen diario', route: '/asistencia-diaria', icon: '📊' }
+        {
+          id: 'registrar-asistencia',
+          label: 'Registrar asistencia',
+          route: '/asistencias',
+          queryParams: {},
+          icon: '✓'
+        },
+        { id: 'historial', label: 'Historial', route: '/historial', queryParams: {}, icon: '🕒' },
+        {
+          id: 'asistencia-diaria',
+          label: 'Resumen diario',
+          route: '/asistencia-diaria',
+          queryParams: {},
+          icon: '📊'
+        }
       ]
     },
     {
       title: 'REPORTES',
       items: [
-        { id: 'reportes', label: 'Reporte general', route: '/reportes', icon: '📈' },
-        { id: 'tardanzas', label: 'Tardanzas', route: '/reportes', icon: '⚠️' },
-        { id: 'faltas', label: 'Faltas', route: '/reportes', icon: '🚫' }
+        { id: 'reportes', label: 'Reporte general', route: '/reportes', queryParams: {}, icon: '📈' },
+        {
+          id: 'tardanzas',
+          label: 'Tardanzas',
+          route: '/reportes',
+          queryParams: { estado: 'TARDANZA' },
+          icon: '⚠️'
+        },
+        {
+          id: 'faltas',
+          label: 'Faltas',
+          route: '/reportes',
+          queryParams: { estado: 'FALTA' },
+          icon: '🚫'
+        }
       ]
     }
   ];

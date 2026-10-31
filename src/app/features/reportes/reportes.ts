@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { ReportesService } from '../../core/services/reportes.service';
 
@@ -80,6 +81,7 @@ import { ReportesService } from '../../core/services/reportes.service';
 })
 export class ReportesPage {
   private readonly reportesService = inject(ReportesService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly rows = signal<Array<{ id: string; fecha: string; persona: string; tipo: string; estado: string }>>([]);
 
@@ -90,7 +92,11 @@ export class ReportesPage {
   persona = '';
 
   constructor() {
-    this.loadReports();
+    this.route.queryParamMap.subscribe((params) => {
+      const estado = params.get('estado');
+      this.estado = estado === 'TARDANZA' || estado === 'FALTA' ? estado : '';
+      this.loadReports();
+    });
   }
 
   loadReports(): void {

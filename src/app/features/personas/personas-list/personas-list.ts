@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Persona } from '../../../core/models/persona.model';
 import { PersonasService } from '../../../core/services/personas.service';
@@ -110,14 +110,20 @@ import { PersonasService } from '../../../core/services/personas.service';
 export class PersonasListPage {
   private readonly personasService = inject(PersonasService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly personas = signal<Persona[]>([]);
   readonly loading = signal(true);
 
   query = '';
+  tipo = '';
 
   constructor() {
-    this.loadPage();
+    this.route.queryParamMap.subscribe((params) => {
+      const tipo = params.get('tipo');
+      this.tipo = tipo === 'ESTUDIANTE' || tipo === 'PROFESOR' ? tipo : '';
+      this.loadPage();
+    });
   }
 
   onFilterChange(): void {
@@ -136,9 +142,10 @@ export class PersonasListPage {
 
   private loadPage(): void {
     this.loading.set(true);
-    const filters = this.query.trim()
-      ? { codigo: this.query.trim() }
-      : {};
+    const filters = {
+      ...(this.query.trim() ? { codigo: this.query.trim() } : {}),
+      ...(this.tipo ? { tipo: this.tipo } : {})
+    };
 
     this.personasService.list(filters).subscribe({
       next: (response) => {

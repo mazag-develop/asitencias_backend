@@ -475,6 +475,12 @@ export class AsistenciaScanPage implements AfterViewInit, OnDestroy {
     return new Promise((resolve) => {
       this.asistenciasService.scan(code).subscribe({
         next: (response: AsistenciaScanResponse) => {
+          if (!response.success) {
+            this.handleError({ status: 400, error: response }, code);
+            resolve();
+            return;
+          }
+
           this.handleSuccess(response, code);
           resolve();
         },
@@ -530,7 +536,7 @@ export class AsistenciaScanPage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (errorCode === 'CODIGO_NO_ENCONTRADO') {
+    if (error?.status === 404 || errorCode === 'CODIGO_NO_ENCONTRADO') {
       this.screenState.set('error');
       this.message.set('CÓDIGO NO ENCONTRADO\nVerifique que su código esté registrado.');
       this.playErrorSound();
