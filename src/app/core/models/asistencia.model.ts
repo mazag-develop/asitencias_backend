@@ -16,7 +16,10 @@ export interface ReporteAsistencia {
   fecha: string;
   hora: string;
   persona: string;
+  personaId: number;
   tipo: TipoPersona;
+  grado?: string | null;
+  seccion?: string | null;
   estado: EstadoAsistencia;
   estadoCodigo?: 'P' | 'T' | 'F';
   estadoDescripcion?: string;

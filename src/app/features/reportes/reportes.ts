@@ -15,6 +15,8 @@ interface FilaReporte {
   key: string;
   persona: string;
   tipo: string;
+  grado: string;
+  seccion: string;
   asistencias: Map<string, ReporteAsistencia>;
   puntualidades: number;
   tardanzas: number;
@@ -96,6 +98,8 @@ type CodigoEstado = 'P' | 'T' | 'F';
                 <tr>
                   <th class="row-number-column name-heading" scope="col">N°</th>
                   <th class="name-column name-heading" scope="col">Nombre completo</th>
+                  <th class="metadata-heading" scope="col">Grado</th>
+                  <th class="metadata-heading" scope="col">Sección</th>
                   <th class="count-heading" scope="col">P</th>
                   <th class="count-heading" scope="col">T</th>
                   <th class="count-heading" scope="col">F</th>
@@ -112,6 +116,8 @@ type CodigoEstado = 'P' | 'T' | 'F';
                       <span>{{ row.persona }}</span>
                       <small>{{ row.tipo }}</small>
                     </th>
+                    <td class="metadata-cell">{{ row.grado || '—' }}</td>
+                    <td class="metadata-cell">{{ row.seccion || '—' }}</td>
                     <td class="count-cell">{{ row.puntualidades }}</td>
                     <td class="count-cell">{{ row.tardanzas }}</td>
                     <td class="count-cell">{{ row.faltas }}</td>
@@ -179,6 +185,8 @@ type CodigoEstado = 'P' | 'T' | 'F';
     .attendance-table thead .name-column, .attendance-table thead .row-number-column { z-index: 5; background: #d0dce8; }
     .row-number { background: #fff; color: #475569; font-variant-numeric: tabular-nums; }
     .attendance-table .count-heading { width: 1.6rem; min-width: 1.6rem; }
+    .attendance-table .metadata-heading, .metadata-cell { min-width: 3.2rem; }
+    .metadata-cell { background: #fff; }
     .attendance-table .date-heading { min-width: 3.85rem; white-space: nowrap; }
     .person-name { background: #fff; color: #111827; font-weight: 400; }
     .person-name span, .person-name small { display: block; overflow: hidden; text-overflow: ellipsis; }
@@ -317,7 +325,9 @@ export class ReportesPage {
 
       const name = record.persona?.trim() || 'Persona sin nombre';
       const type = record.tipo || '';
-      const key = `${name.toLocaleLowerCase()}|${type}`;
+      const grado = record.grado?.trim() || '';
+      const seccion = record.seccion?.trim() || '';
+      const key = String(record.personaId);
       let row = grouped.get(key);
 
       if (!row) {
@@ -325,6 +335,8 @@ export class ReportesPage {
           key,
           persona: name,
           tipo: type,
+          grado,
+          seccion,
           asistencias: new Map<string, ReporteAsistencia>(),
           puntualidades: 0,
           tardanzas: 0,
