@@ -17,16 +17,22 @@ import { PersonasService } from '../../../core/services/personas.service';
           <p class="eyebrow">Gestión</p>
           <h2>Personas</h2>
         </div>
-        <button type="button" class="primary-button" [routerLink]="'/personas/nuevo'">+ Nueva persona</button>
+        <div class="header-actions">
+          <a class="secondary-button" routerLink="/personas/carga-masiva">Carga masiva</a>
+          <button type="button" class="primary-button" [routerLink]="'/personas/nuevo'">+ Nueva persona</button>
+        </div>
       </div>
 
       <div class="filters-card">
-        <input type="search" placeholder="Buscar por código, documento o nombre" [(ngModel)]="query" (ngModelChange)="onFilterChange()" />
+        <input type="search" placeholder="Buscar por código" [(ngModel)]="query" (ngModelChange)="onFilterChange()" />
       </div>
 
       @if (loading()) {
         <div class="panel loader-panel">Cargando personas...</div>
       } @else {
+        @if (loadError()) {
+          <div class="panel error-state">No se pudo cargar el listado. Intente actualizar la búsqueda.</div>
+        }
         <div class="panel">
           @if (personas().length) {
             <div class="table-wrap">
@@ -34,7 +40,7 @@ import { PersonasService } from '../../../core/services/personas.service';
                 <thead>
                   <tr>
                     <th>Código</th>
-                    <th>Documento</th>
+                    <th>DNI</th>
                     <th>Nombres</th>
                     <th>Apellidos</th>
                     <th>Tipo</th>
@@ -47,13 +53,13 @@ import { PersonasService } from '../../../core/services/personas.service';
                   @for (persona of personas(); track persona.id) {
                     <tr>
                       <td>{{ persona.codigo }}</td>
-                      <td>{{ persona.documento || '—' }}</td>
+                      <td>{{ persona.dni || persona.documento || '—' }}</td>
                       <td>{{ persona.nombres }}</td>
                       <td>{{ persona.apellidos }}</td>
                       <td>{{ persona.tipo }}</td>
                       <td>
                         <span class="status status-{{ persona.activo ? 'active' : 'inactive' }}">
-                          {{ persona.activo ? 'Activo' : 'Inactivo' }}
+                          {{ persona.activo ? 'Habilitado' : 'Deshabilitado' }}
                         </span>
                       </td>
                       <td>{{ persona.createdAt | date: 'dd/MM/yyyy' }}</td>
@@ -70,9 +76,22 @@ import { PersonasService } from '../../../core/services/personas.service';
               </table>
             </div>
           } @else {
-            <div class="empty-state">No se encontraron personas con los filtros actuales.</div>
+            @if (!loadError()) {
+              <div class="empty-state">No se encontraron personas con los filtros actuales.</div>
+            }
           }
         </div>
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button type="button" class="link-button" (click)="loadPage(currentPage() - 1)" [disabled]="currentPage() <= 1">
+              Anterior
+            </button>
+            <span>Página {{ currentPage() }} de {{ totalPages() }} · {{ totalRecords() }} personas</span>
+            <button type="button" class="link-button" (click)="loadPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages()">
+              Siguiente
+            </button>
+          </div>
+        }
       }
     </section>
   `,
@@ -81,6 +100,7 @@ import { PersonasService } from '../../../core/services/personas.service';
 
     .page-shell { display: flex; flex-direction: column; gap: 1rem; }
     .page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .header-actions { display: flex; align-items: center; gap: 0.6rem; }
     .eyebrow { margin: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: #64748b; }
     h2 { margin: 0; }
     .filters-card,
@@ -93,6 +113,7 @@ import { PersonasService } from '../../../core/services/personas.service';
     .primary-button {
       border: none; background: #2563eb; color: white; border-radius: 0.75rem; padding: 0.75rem 1rem; cursor: pointer; font-weight: 700;
     }
+    .secondary-button { text-decoration: none; background: #f1f5f9; color: #0f172a; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 700; }
     .loader-panel { display: grid; place-items: center; min-height: 140px; color: #64748b; font-weight: 600; }
     .table-wrap { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -104,7 +125,10 @@ import { PersonasService } from '../../../core/services/personas.service';
     .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .link-button { border: 1px solid #cbd5e1; background: white; color: #0f172a; border-radius: 0.6rem; padding: 0.35rem 0.6rem; cursor: pointer; }
     .empty-state { color: #64748b; padding: 1rem 0; font-weight: 600; }
-    @media (max-width: 650px) { .page-header { align-items: flex-start; flex-direction: column; } }
+    .error-state { color: #b91c1c; }
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; color: #475569; }
+    .link-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 650px) { .page-header { align-items: flex-start; flex-direction: column; } .header-actions { flex-wrap: wrap; } .pagination { flex-wrap: wrap; } }
   `
 })
 export class PersonasListPage {
@@ -114,6 +138,10 @@ export class PersonasListPage {
 
   readonly personas = signal<Persona[]>([]);
   readonly loading = signal(true);
+  readonly loadError = signal(false);
+  readonly currentPage = signal(1);
+  readonly totalPages = signal(0);
+  readonly totalRecords = signal(0);
 
   query = '';
   tipo = '';
@@ -122,12 +150,38 @@ export class PersonasListPage {
     this.route.queryParamMap.subscribe((params) => {
       const tipo = params.get('tipo');
       this.tipo = tipo === 'ESTUDIANTE' || tipo === 'PROFESOR' ? tipo : '';
-      this.loadPage();
+      this.loadInitialPage();
     });
   }
 
   onFilterChange(): void {
-    this.loadPage();
+    this.loadPage(1);
+  }
+
+  loadPage(page: number): void {
+    this.currentPage.set(page);
+    this.loadError.set(false);
+    this.loading.set(true);
+    const filters = {
+      ...(this.query.trim() ? { codigo: this.query.trim() } : {}),
+      ...(this.tipo ? { tipo: this.tipo } : {}),
+      pagina: page,
+      limite: 10
+    };
+
+    this.personasService.list(filters).subscribe({
+      next: (response) => {
+        this.personas.set(response.data);
+        this.currentPage.set(response.paginacion.pagina);
+        this.totalPages.set(response.paginacion.totalPaginas);
+        this.totalRecords.set(response.paginacion.total);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      }
+    });
   }
 
   toggleStatus(persona: Persona): void {
@@ -140,22 +194,7 @@ export class PersonasListPage {
     });
   }
 
-  private loadPage(): void {
-    this.loading.set(true);
-    const filters = {
-      ...(this.query.trim() ? { codigo: this.query.trim() } : {}),
-      ...(this.tipo ? { tipo: this.tipo } : {})
-    };
-
-    this.personasService.list(filters).subscribe({
-      next: (response) => {
-        this.personas.set(response.data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.personas.set([]);
-        this.loading.set(false);
-      }
-    });
+  private loadInitialPage(): void {
+    this.loadPage(1);
   }
 }

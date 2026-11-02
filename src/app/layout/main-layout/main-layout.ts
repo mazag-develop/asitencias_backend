@@ -323,6 +323,13 @@ export class MainLayout {
       items: [
         { id: 'personas', label: 'Personas', route: '/personas', queryParams: {}, icon: '👥' },
         {
+          id: 'carga-masiva',
+          label: 'Carga masiva',
+          route: '/personas/carga-masiva',
+          queryParams: {},
+          icon: '⬆'
+        },
+        {
           id: 'estudiantes',
           label: 'Estudiantes',
           route: '/personas',
@@ -337,6 +344,10 @@ export class MainLayout {
           icon: '👨‍🏫'
         }
       ]
+    },
+    {
+      title: 'SISTEMA',
+      items: [{ id: 'auditoria', label: 'Auditoría', route: '/auditoria', queryParams: {}, icon: '▤' }]
     },
     {
       title: 'ASISTENCIA',

@@ -25,15 +25,23 @@ import { PersonasService } from '../../../core/services/personas.service';
       @if (persona()) {
         <div class="card">
           <div class="row"><span>Código</span><strong>{{ persona()?.codigo }}</strong></div>
-          <div class="row"><span>Documento</span><strong>{{ persona()?.documento || 'Sin documento' }}</strong></div>
+          <div class="row"><span>DNI</span><strong>{{ persona()?.dni || persona()?.documento || 'Sin DNI' }}</strong></div>
           <div class="row"><span>Nombres</span><strong>{{ persona()?.nombres }}</strong></div>
           <div class="row"><span>Apellidos</span><strong>{{ persona()?.apellidos }}</strong></div>
           <div class="row"><span>Tipo</span><strong>{{ persona()?.tipo }}</strong></div>
-          <div class="row"><span>Estado</span><strong>{{ persona()?.activo ? 'Activo' : 'Inactivo' }}</strong></div>
+          @if (persona()?.tipo === 'ESTUDIANTE') {
+            <div class="row"><span>Grado</span><strong>{{ persona()?.grado || '—' }}</strong></div>
+            <div class="row"><span>Sección</span><strong>{{ persona()?.seccion || '—' }}</strong></div>
+          } @else {
+            <div class="row"><span>Cargo</span><strong>{{ persona()?.cargo || '—' }}</strong></div>
+          }
+          <div class="row"><span>Estado</span><strong>{{ persona()?.activo ? 'Habilitado' : 'Deshabilitado' }}</strong></div>
           <div class="row"><span>Registro</span><strong>{{ persona()?.createdAt | date: 'dd/MM/yyyy' }}</strong></div>
         </div>
-      } @else {
+      } @else if (loadError()) {
         <div class="card empty">No se pudo cargar la información de la persona.</div>
+      } @else {
+        <div class="card empty">Cargando información de la persona...</div>
       }
     </section>
   `,
@@ -57,11 +65,17 @@ export class PersonaDetailPage {
   private readonly personasService = inject(PersonasService);
 
   readonly persona = signal<Persona | null>(null);
+  readonly loadError = signal(false);
 
   constructor() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) {
-      this.personasService.getById(id).subscribe((value) => this.persona.set(value));
+      this.personasService.getById(id).subscribe({
+        next: (value) => this.persona.set(value),
+        error: () => this.loadError.set(true)
+      });
+    } else {
+      this.loadError.set(true);
     }
   }
 }

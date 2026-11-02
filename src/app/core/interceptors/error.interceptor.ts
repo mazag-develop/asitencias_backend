@@ -5,6 +5,17 @@ import { catchError, throwError } from 'rxjs';
 import { NotificationService } from '../services/notification.service';
 
 const resolveMessage = (error: HttpErrorResponse): string => {
+  const payload = error.error;
+  if (typeof payload === 'object' && payload !== null && 'message' in payload) {
+    const message = (payload as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+    if (Array.isArray(message) && message.length) {
+      return message.map((item) => String(item)).join('; ');
+    }
+  }
+
   if (error.status === 0) {
     return 'No se pudo establecer conexión con el backend.';
   }
@@ -27,6 +38,10 @@ const resolveMessage = (error: HttpErrorResponse): string => {
 
   if (error.status === 409) {
     return 'El recurso ya existe o presenta un conflicto.';
+  }
+
+  if (error.status === 413) {
+    return 'El archivo excede el límite permitido.';
   }
 
   if (error.status === 422) {

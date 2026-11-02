@@ -26,6 +26,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/personas/persona-form/persona-form').then((m) => m.PersonaFormPage)
       },
       {
+        path: 'personas/carga-masiva',
+        loadComponent: () =>
+          import('./features/personas/carga-masiva/carga-masiva').then((m) => m.CargaMasivaPage)
+      },
+      {
         path: 'personas/:id',
         loadComponent: () => import('./features/personas/persona-detail/persona-detail').then((m) => m.PersonaDetailPage)
       },
@@ -44,6 +49,10 @@ export const routes: Routes = [
       {
         path: 'reportes',
         loadComponent: () => import('./features/reportes/reportes').then((m) => m.ReportesPage)
+      },
+      {
+        path: 'auditoria',
+        loadComponent: () => import('./features/auditoria/auditoria').then((m) => m.AuditoriaPage)
       },
       {
         path: 'configuracion',

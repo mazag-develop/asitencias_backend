@@ -1,8 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { CrearPersona, Persona } from '../../../core/models/persona.model';
+import { CargoPersona, GuardarPersona, TipoPersona } from '../../../core/models/persona.model';
 import { PersonasService } from '../../../core/services/personas.service';
 
 @Component({
@@ -27,8 +27,8 @@ import { PersonasService } from '../../../core/services/personas.service';
           </label>
 
           <label>
-            <span>Documento</span>
-            <input formControlName="documento" type="text" placeholder="Opcional" />
+            <span>DNI</span>
+            <input formControlName="dni" type="text" inputmode="numeric" maxlength="20" placeholder="12345678" />
           </label>
 
           <label>
@@ -43,19 +43,43 @@ import { PersonasService } from '../../../core/services/personas.service';
 
           <label>
             <span>Tipo de persona</span>
-            <select formControlName="tipo">
+            <select formControlName="tipo" (change)="onTipoChange()">
               <option value="ESTUDIANTE">Estudiante</option>
               <option value="PROFESOR">Profesor</option>
             </select>
           </label>
+
+          @if (form.controls.tipo.value === 'ESTUDIANTE') {
+            <label>
+              <span>Grado</span>
+              <input formControlName="grado" type="text" maxlength="50" placeholder="5to" />
+            </label>
+            <label>
+              <span>Sección</span>
+              <input formControlName="seccion" type="text" maxlength="20" placeholder="A" />
+            </label>
+          } @else {
+            <label>
+              <span>Cargo</span>
+              <select formControlName="cargo">
+                <option value="">Seleccione un cargo</option>
+                @for (cargo of cargos; track cargo) {
+                  <option [value]="cargo">{{ cargo }}</option>
+                }
+              </select>
+            </label>
+          }
         </div>
 
         @if (form.touched && form.invalid) {
-          <div class="error-box">Complete los campos obligatorios antes de continuar.</div>
+          <div class="error-box">Complete los campos obligatorios. El DNI debe tener entre 8 y 20 dígitos.</div>
+        }
+        @if (loadError()) {
+          <div class="error-box">No se pudo cargar la persona para editarla.</div>
         }
 
         <div class="actions-row">
-          <button type="submit" class="primary-button" [disabled]="submitting()">
+          <button type="submit" class="primary-button" [disabled]="submitting() || !!loadError()">
             {{ submitting() ? 'Guardando...' : (isEditing() ? 'Actualizar persona' : 'Guardar persona') }}
           </button>
         </div>
@@ -89,16 +113,28 @@ export class PersonaFormPage {
 
   readonly submitting = signal(false);
   readonly isEditing = signal(false);
+  readonly loadError = signal(false);
+  readonly cargos: CargoPersona[] = [
+    'DOCENTE',
+    'DIRECTOR(A)',
+    'ADMINISTRATIVO',
+    'SECRETARIA(O)',
+    'AUXILIAR'
+  ];
 
   readonly form = this.fb.nonNullable.group({
-    codigo: ['', [Validators.required, Validators.minLength(3)]],
-    documento: [''],
-    nombres: ['', [Validators.required]],
-    apellidos: ['', [Validators.required]],
-    tipo: ['ESTUDIANTE' as 'ESTUDIANTE' | 'PROFESOR', [Validators.required]]
+    codigo: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+    dni: ['', [Validators.required, Validators.pattern(/^\d{8,20}$/)]],
+    nombres: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    apellidos: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    tipo: ['ESTUDIANTE' as TipoPersona, [Validators.required]],
+    grado: [''],
+    seccion: [''],
+    cargo: ['' as CargoPersona | '', []]
   });
 
   constructor() {
+    this.updateTypeValidators();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditing.set(true);
@@ -112,12 +148,17 @@ export class PersonaFormPage {
       return;
     }
 
-    const payload: CrearPersona = {
-      codigo: this.form.value.codigo?.trim() ?? '',
-      documento: this.form.value.documento?.trim() || undefined,
-      nombres: this.form.value.nombres?.trim() ?? '',
-      apellidos: this.form.value.apellidos?.trim() ?? '',
-      tipo: this.form.value.tipo ?? 'ESTUDIANTE'
+    const values = this.form.getRawValue();
+    const tipo = values.tipo;
+    const payload: GuardarPersona = {
+      codigo: values.codigo.trim(),
+      dni: values.dni.trim(),
+      nombres: values.nombres.trim(),
+      apellidos: values.apellidos.trim(),
+      tipo,
+      ...(tipo === 'ESTUDIANTE'
+        ? { grado: values.grado.trim(), seccion: values.seccion.trim() }
+        : { cargo: values.cargo as CargoPersona })
     };
 
     this.submitting.set(true);
@@ -128,32 +169,45 @@ export class PersonaFormPage {
       : this.personasService.create(payload);
 
     request.subscribe({
-      next: (response) => {
+      next: () => {
         this.submitting.set(false);
-        if (response) {
-          this.router.navigateByUrl('/personas');
-        }
+        this.router.navigateByUrl('/personas');
       },
-      error: () => {
-        this.submitting.set(false);
-      }
+      error: () => this.submitting.set(false)
     });
   }
 
   private loadPersona(id: number): void {
-    this.personasService.getById(id).subscribe((persona) => {
-      if (!persona) {
-        this.router.navigateByUrl('/personas');
-        return;
-      }
-
-      this.form.patchValue({
-        codigo: persona.codigo,
-        documento: persona.documento ?? '',
-        nombres: persona.nombres,
-        apellidos: persona.apellidos,
-        tipo: persona.tipo
-      });
+    this.personasService.getById(id).subscribe({
+      next: (persona) => {
+        this.form.patchValue({
+          codigo: persona.codigo,
+          dni: persona.dni ?? persona.documento ?? '',
+          nombres: persona.nombres,
+          apellidos: persona.apellidos,
+          tipo: persona.tipo,
+          grado: persona.grado ?? '',
+          seccion: persona.seccion ?? '',
+          cargo: persona.cargo ?? ''
+        });
+        this.updateTypeValidators();
+      },
+      error: () => this.loadError.set(true)
     });
+  }
+
+  onTipoChange(): void {
+    this.updateTypeValidators();
+  }
+
+  private updateTypeValidators(): void {
+    const estudiante = this.form.controls.tipo.value === 'ESTUDIANTE';
+    const { grado, seccion, cargo } = this.form.controls;
+    grado.setValidators(estudiante ? [Validators.required, Validators.maxLength(50)] : []);
+    seccion.setValidators(estudiante ? [Validators.required, Validators.maxLength(20)] : []);
+    cargo.setValidators(estudiante ? [] : [Validators.required]);
+    grado.updateValueAndValidity();
+    seccion.updateValueAndValidity();
+    cargo.updateValueAndValidity();
   }
 }

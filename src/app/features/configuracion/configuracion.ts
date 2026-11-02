@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 
+import { environment } from '../../../environments/environment';
+
 @Component({
   selector: 'app-configuracion-page',
   standalone: true,
@@ -15,16 +17,16 @@ import { Component } from '@angular/core';
       <div class="grid">
         <div class="panel">
           <h3>Backend</h3>
-          <p>URL base: http://localhost:3000/api</p>
-          <p>Modo: Desarrollo</p>
+          <p>URL base: {{ apiUrl }}</p>
+          <p>Modo: {{ environment.production ? 'Producción' : 'Desarrollo' }}</p>
         </div>
 
         <div class="panel">
-          <h3>Requisitos pendientes</h3>
+          <h3>Integraciones disponibles</h3>
           <ul>
-            <li>Endpoint /api/dashboard</li>
-            <li>Endpoint /api/reportes/asistencias</li>
-            <li>Endpoint /api/asistencias/diaria</li>
+            <li>Gestión de personas, estado y carga masiva</li>
+            <li>Asistencias, resumen y reportes</li>
+            <li>Auditoría de eventos</li>
           </ul>
         </div>
       </div>
@@ -41,4 +43,7 @@ import { Component } from '@angular/core';
     ul { margin: 0; padding-left: 1.2rem; color: #475569; }
   `
 })
-export class ConfiguracionPage {}
+export class ConfiguracionPage {
+  readonly apiUrl = environment.apiUrl;
+  readonly environment = environment;
+}

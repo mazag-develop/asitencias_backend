@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 
@@ -33,17 +32,10 @@ export class ApiService {
   }
 
   downloadBlob(endpoint: string, params?: QueryParams): Observable<Blob> {
-    return this.http
-      .get(`${this.baseUrl}${endpoint}`, {
-        params: this.buildParams(params),
-        responseType: 'blob'
-      })
-      .pipe(
-        catchError(() => {
-          const fallback = new Blob([], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          return of(fallback);
-        })
-      );
+    return this.http.get(`${this.baseUrl}${endpoint}`, {
+      params: this.buildParams(params),
+      responseType: 'blob'
+    });
   }
 
   private buildParams(params?: QueryParams): HttpParams {

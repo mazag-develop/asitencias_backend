@@ -26,12 +26,18 @@ import { ReportesService } from '../../core/services/reportes.service';
           <label><span>Persona</span><input type="text" [(ngModel)]="persona" /></label>
         </div>
         <div class="actions-row">
-          <button type="button" class="secondary-button" (click)="loadReports()">Consultar</button>
-          <button type="button" class="primary-button" (click)="downloadExcel()">Exportar Excel</button>
+          <button type="button" class="secondary-button" (click)="loadReports()" [disabled]="loading()">Consultar</button>
+          <button type="button" class="primary-button" (click)="downloadExcel()" [disabled]="downloading()">
+            {{ downloading() ? 'Descargando...' : 'Exportar Excel' }}
+          </button>
         </div>
       </div>
 
-      @if (rows().length) {
+      @if (loading()) {
+        <div class="panel empty-state">Consultando reportes...</div>
+      } @else if (loadError()) {
+        <div class="panel error-state">No se pudo consultar el reporte. Verifique la conexión e intente nuevamente.</div>
+      } @else if (rows().length) {
         <div class="panel table-panel">
           <table class="data-table">
             <thead>
@@ -77,6 +83,8 @@ import { ReportesService } from '../../core/services/reportes.service';
     .data-table th, .data-table td { border-bottom: 1px solid #e2e8f0; padding: 0.75rem 0.5rem; text-align: left; }
     .data-table th { color: #64748b; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
     .empty-state { color: #64748b; }
+    .error-state { color: #b91c1c; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
   `
 })
 export class ReportesPage {
@@ -84,6 +92,9 @@ export class ReportesPage {
   private readonly route = inject(ActivatedRoute);
 
   readonly rows = signal<Array<{ id: string; fecha: string; persona: string; tipo: string; estado: string }>>([]);
+  readonly loading = signal(false);
+  readonly downloading = signal(false);
+  readonly loadError = signal(false);
 
   fechaInicio = '';
   fechaFin = '';
@@ -100,43 +111,57 @@ export class ReportesPage {
   }
 
   loadReports(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
     this.reportesService.getReporte({
       fechaInicio: this.fechaInicio,
       fechaFin: this.fechaFin,
       tipo: this.tipo,
       estado: this.estado,
       persona: this.persona
-    }).subscribe((response) => {
-      const data = Array.isArray(response) ? response : [];
-      this.rows.set(
-        data.map((item, index) => {
-          const row = item as Record<string, unknown>;
-          return {
-            id: `report-${index}`,
-            fecha: String(row['fecha'] ?? ''),
-            persona: String(row['persona'] ?? ''),
-            tipo: String(row['tipo'] ?? ''),
-            estado: String(row['estado'] ?? '')
-          };
-        })
-      );
+    }).subscribe({
+      next: (response) => {
+        const data = Array.isArray(response) ? response : [];
+        this.rows.set(
+          data.map((item, index) => {
+            const row = item as Record<string, unknown>;
+            return {
+              id: `report-${index}`,
+              fecha: String(row['fecha'] ?? ''),
+              persona: String(row['persona'] ?? ''),
+              tipo: String(row['tipo'] ?? ''),
+              estado: String(row['estado'] ?? '')
+            };
+          })
+        );
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      }
     });
   }
 
   downloadExcel(): void {
+    this.downloading.set(true);
     this.reportesService.downloadExcel({
       fechaInicio: this.fechaInicio,
       fechaFin: this.fechaFin,
       tipo: this.tipo,
       estado: this.estado,
       persona: this.persona
-    }).subscribe((blob) => {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'reporte-asistencias.xlsx';
-      link.click();
-      URL.revokeObjectURL(url);
+    }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'reporte-asistencias.xlsx';
+        link.click();
+        URL.revokeObjectURL(url);
+        this.downloading.set(false);
+      },
+      error: () => this.downloading.set(false)
     });
   }
 }
