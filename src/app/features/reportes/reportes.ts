@@ -32,7 +32,7 @@ type CodigoEstado = 'P' | 'T' | 'F';
       <div class="page-header">
         <div>
           <p class="eyebrow">Reportes</p>
-          <h2>Asistencia por día</h2>
+          <h2>Registro de asistencia</h2>
         </div>
         <button type="button" class="primary-button" (click)="downloadExcel()" [disabled]="downloading()">
           {{ downloading() ? 'Descargando...' : 'Exportar Excel' }}
@@ -147,57 +147,55 @@ type CodigoEstado = 'P' | 'T' | 'F';
   `,
   styles: `
     :host { display: block; }
-    .page-shell { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-    .page-header, .report-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-    .eyebrow { margin: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: #64748b; }
-    h2, h3 { margin: 0; color: #0f172a; }
-    .panel { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem 1.1rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04); }
-    .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.9rem; }
-    label { display: flex; flex-direction: column; gap: 0.45rem; color: #334155; font-weight: 700; }
-    input, select { min-width: 0; border: 1px solid #cbd5e1; border-radius: 0.8rem; padding: 0.7rem 0.85rem; font-size: 0.92rem; }
-    .actions-row { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; }
-    .secondary-button, .primary-button { border: none; border-radius: 0.8rem; padding: 0.75rem 1rem; cursor: pointer; font-weight: 700; }
-    .secondary-button { background: #f1f5f9; color: #0f172a; }
-    .primary-button { background: #2563eb; color: white; }
+    .page-shell { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; padding: 0.65rem; border: 1px solid #a0b0c0; background: #dbe4ee; color: #111827; font: 11px Arial, sans-serif; }
+    .page-header, .report-heading { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+    .eyebrow { margin: 0; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+    h2, h3 { margin: 0; color: #111827; }
+    h2 { font-size: 1rem; }
+    h3 { font-size: 0.82rem; text-transform: capitalize; }
+    .panel { border: 1px solid #a0b0c0; background: #dbe4ee; padding: 0.5rem; }
+    .field-grid { display: flex; flex-wrap: wrap; align-items: end; gap: 0.55rem 0.8rem; }
+    label { display: flex; flex-direction: column; gap: 0.2rem; color: #111827; font-weight: 700; }
+    input, select { min-width: 0; border: 1px solid #7a94b0; border-radius: 0; background: #fff; padding: 0.25rem 0.35rem; color: #111827; font: inherit; }
+    .actions-row { display: flex; justify-content: flex-end; margin-top: 0.45rem; }
+    .secondary-button, .primary-button { border: 1px solid #061c42; border-radius: 3px; padding: 0.3rem 0.65rem; cursor: pointer; font: inherit; font-weight: 700; }
+    .secondary-button { background: #fff; color: #0b2f6b; }
+    .primary-button { background: #0b2f6b; color: #fff; }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8rem 1.2rem; color: #334155; font-size: 0.85rem; }
-    .legend > span { display: inline-flex; align-items: center; gap: 0.4rem; }
-    .status-mark { display: inline-grid; place-items: center; width: 1.6rem; height: 1.45rem; border: 1px solid #cbd5e1; border-radius: 0.35rem; font-style: normal; font-size: 0.75rem; font-weight: 800; }
-    .status-present { background: #fff; color: #0f172a; }
-    .status-late { background: #facc15; color: #422006; }
-    .status-absent { background: #dc2626; color: #fff; }
-    .report-panel { padding: 0.75rem; overflow: hidden; }
-    .report-heading { padding: 0.35rem 0.35rem 0.8rem; color: #64748b; font-size: 0.82rem; }
-    .report-heading h3 { margin-top: 0.15rem; font-size: 1.05rem; text-transform: capitalize; }
-    .table-scroll { max-height: min(68vh, 760px); overflow: auto; border: 1px solid #dbe3ec; border-radius: 0.65rem; }
-    .attendance-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
-    .attendance-table th, .attendance-table td { min-width: 3.65rem; padding: 0.35rem; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; text-align: center; }
-    .attendance-table thead th { position: sticky; top: 0; z-index: 3; height: 3rem; background: #f1f5f9; color: #334155; font-weight: 800; }
-    .attendance-table .row-number-column { position: sticky; left: 0; z-index: 2; min-width: 2.6rem; width: 2.6rem; max-width: 2.6rem; }
-    .attendance-table .name-column { position: sticky; left: 3.3rem; z-index: 2; min-width: 13rem; max-width: 17rem; text-align: left; }
-    .attendance-table thead .name-column { z-index: 5; }
-    .attendance-table thead .row-number-column { z-index: 5; background: #eaf1f8; }
-    .attendance-table .name-heading { background: #eaf1f8; }
-    .row-number { background: #fff; color: #64748b; font-variant-numeric: tabular-nums; }
-    .attendance-table .count-heading { min-width: 2.6rem; }
-    .attendance-table .date-heading { min-width: 4.2rem; white-space: nowrap; }
-    .person-name { background: #fff; color: #1e293b; }
+    .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.85rem; color: #334155; }
+    .legend > span { display: inline-flex; align-items: center; gap: 0.25rem; }
+    .status-mark { display: inline-grid; place-items: center; width: 1.25rem; height: 1.1rem; border: 1px solid #b0c0d0; font-style: normal; font-weight: 800; }
+    .status-present { background: #eef4f8; color: #000; }
+    .status-late { background: #e6e64c; color: #000; }
+    .status-absent { background: #e61c24; color: #fff; }
+    .report-panel { padding: 0.35rem; overflow: hidden; background: #fff; }
+    .report-heading { padding: 0.15rem 0.15rem 0.35rem; color: #334155; }
+    .table-scroll { max-height: min(68vh, 760px); overflow: auto; border: 1px solid #90a0b0; background: #fff; }
+    .attendance-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: inherit; text-align: center; }
+    .attendance-table th, .attendance-table td { min-width: 2.6rem; padding: 0.18rem 0.15rem; border: 1px solid #b0c0d0; white-space: nowrap; text-align: center; }
+    .attendance-table thead th { position: sticky; top: 0; z-index: 3; height: 1.8rem; background: #d0dce8; color: #000; font-weight: 700; }
+    .attendance-table .row-number-column { position: sticky; left: 0; z-index: 2; width: 1.9rem; min-width: 1.9rem; max-width: 1.9rem; }
+    .attendance-table .name-column { position: sticky; left: 1.9rem; z-index: 2; min-width: 11.25rem; max-width: 17rem; text-align: left; }
+    .attendance-table thead .name-column, .attendance-table thead .row-number-column { z-index: 5; background: #d0dce8; }
+    .row-number { background: #fff; color: #475569; font-variant-numeric: tabular-nums; }
+    .attendance-table .count-heading { width: 1.6rem; min-width: 1.6rem; }
+    .attendance-table .date-heading { min-width: 3.85rem; white-space: nowrap; }
+    .person-name { background: #fff; color: #111827; font-weight: 400; }
     .person-name span, .person-name small { display: block; overflow: hidden; text-overflow: ellipsis; }
-    .person-name small { margin-top: 0.18rem; color: #64748b; font-size: 0.65rem; font-weight: 500; }
-    .count-cell { min-width: 2.6rem !important; background: #f8fafc; color: #475569; font-variant-numeric: tabular-nums; }
+    .person-name small { margin-top: 0.1rem; color: #64748b; font-size: 0.58rem; font-weight: 400; }
+    .count-cell { width: 1.6rem; min-width: 1.6rem !important; background: #e8eff5; color: #334155; font-variant-numeric: tabular-nums; }
     .attendance-cell { background: #fff; }
-    .attendance-mark { display: flex; min-height: 2.1rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.12rem; border: 1px solid #d5dce5; border-radius: 0.25rem; line-height: 1.1; }
-    .attendance-mark strong { font-size: 0.78rem; }
-    .attendance-mark small { font-size: 0.62rem; font-variant-numeric: tabular-nums; }
-    .attendance-mark.status-present { background: #fff; color: #0f172a; }
-    .attendance-mark.status-late { border-color: #eab308; background: #facc15; color: #422006; }
-    .attendance-mark.status-absent { border-color: #dc2626; background: #dc2626; color: #fff; }
-    .empty-state, .error-state { color: #64748b; }
+    .attendance-mark { display: flex; min-height: 1.3rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem; line-height: 1; }
+    .attendance-mark strong { font-size: inherit; font-weight: 400; }
+    .attendance-mark small { font-size: 0.55rem; font-variant-numeric: tabular-nums; }
+    .attendance-mark.status-present { background: #eef4f8; color: #000; }
+    .attendance-mark.status-late { background: #e6e64c; color: #000; }
+    .attendance-mark.status-absent { background: #e61c24; color: #fff; font-weight: 700; }
+    .empty-state, .error-state { color: #475569; }
     .error-state { color: #b91c1c; }
     @media (max-width: 640px) {
       .page-header, .report-heading { align-items: flex-start; flex-direction: column; }
-      .report-heading { gap: 0.3rem; }
-      .attendance-table .name-column { left: 3.3rem; min-width: 10.5rem; }
+      .attendance-table .name-column { left: 1.9rem; min-width: 10.5rem; }
       .table-scroll { max-height: 70vh; }
     }
   `
