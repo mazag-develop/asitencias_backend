@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { ReporteAsistencia } from '../models/asistencia.model';
 import { ApiService, QueryParams } from './api.service';
 
 @Injectable({
@@ -9,8 +10,8 @@ import { ApiService, QueryParams } from './api.service';
 export class ReportesService {
   private readonly api = inject(ApiService);
 
-  getReporte(filters?: QueryParams): Observable<unknown[]> {
-    return this.api.get<unknown[]>('/reportes/asistencias', filters);
+  getReporte(filters?: QueryParams): Observable<ReporteAsistencia[]> {
+    return this.api.get<ReporteAsistencia[]>('/reportes/asistencias', filters);
   }
 
   downloadExcel(filters?: QueryParams): Observable<Blob> {

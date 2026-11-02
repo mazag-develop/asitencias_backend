@@ -12,6 +12,16 @@ export interface Asistencia {
   persona?: Persona;
 }
 
+export interface ReporteAsistencia {
+  fecha: string;
+  hora: string;
+  persona: string;
+  tipo: TipoPersona;
+  estado: EstadoAsistencia;
+  estadoCodigo?: 'P' | 'T' | 'F';
+  estadoDescripcion?: string;
+}
+
 export interface AsistenciaScanPayload {
   codigo: string;
 }
